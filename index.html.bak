@@ -81,7 +81,7 @@
       width: 100%;
       height: auto;
     }
-    .close-btn, .capture-btn, .fullscreen-btn {
+    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn {
       background: #f00;
       color: #fff;
       border: none;
@@ -109,6 +109,12 @@
       bottom: -1px;
       right: -1px;
       background: #00f;
+    }
+    .speed-btn {
+      bottom: -1px;
+      left: -1px;
+      background: #ffa500; /* orange color */
+      font-size: 12px; /* Adjust font size for smaller text */
     }
     .view-toggle {
       cursor: pointer;
@@ -139,6 +145,7 @@
       <button class="close-btn" id="closePopupButton">&times;</button>
       <button class="capture-btn" id="captureButton">+</button>
       <button class="fullscreen-btn" id="fullscreenButton">⛶</button>
+      <button class="speed-btn" id="speedButton">1x</button>
       <video controls id="videoPlayer"></video>
     </div>
   </div>
@@ -149,12 +156,16 @@
     document.getElementById('viewToggle').addEventListener('click', toggleInfo);
     document.getElementById('captureButton').addEventListener('click', captureThumbnail);
     document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
+    document.getElementById('speedButton').addEventListener('click', changeSpeed);
 
     let currentFile;
     let currentDirectoryHandle;
     let showInfo = false;
     let videoFiles = [];
     let videoFileNames = new Set();
+
+    const speeds = [0.2, 0.5, 1, 2, 3, 4];
+    let currentSpeedIndex = 2;
 
     function toggleInfo() {
       showInfo = !showInfo;
@@ -352,6 +363,7 @@
     }
 
     function closePopup() {
+      exitFullscreen();
       document.getElementById('videoPopup').style.display = 'none';
       const videoPlayer = document.getElementById('videoPlayer');
       videoPlayer.pause();
@@ -365,14 +377,18 @@
       const rect = videoPlayer.getBoundingClientRect();
       const clickX = (event.touches ? event.touches[0].clientX : event.clientX) - rect.left;
 
-      // Always play the video after a click
-      videoPlayer.play();
-
-      if (clickX < rect.width / 2) {
-        // Click on the left half - rewind
+      if (clickX > rect.width / 3 && clickX < (rect.width / 3) * 2) {
+        // Click in the middle third - toggle play/pause
+        if (videoPlayer.paused) {
+          videoPlayer.play();
+        } else {
+          videoPlayer.pause();
+        }
+      } else if (clickX < rect.width / 3) {
+        // Click on the left third - rewind
         videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
       } else {
-        // Click on the right half - fast forward
+        // Click on the right third - fast forward
         videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
       }
     }
@@ -390,16 +406,27 @@
           videoPopup.msRequestFullscreen();
         }
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) { // Firefox
-          document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
-          document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { // IE/Edge
-          document.msExitFullscreen();
-        }
+        exitFullscreen();
       }
+    }
+
+    function exitFullscreen() {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+      }
+    }
+
+    function changeSpeed() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
+      videoPlayer.playbackRate = speeds[currentSpeedIndex];
+      document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
     }
   </script>
 </body>
