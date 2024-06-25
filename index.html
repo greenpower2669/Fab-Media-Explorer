@@ -533,6 +533,15 @@
         case 'ArrowDown':
           speedDown();
           break;
+        case ' ':
+          // Toggle play/pause with space bar
+          if (videoPlayer.paused) {
+            videoPlayer.play();
+          } else {
+            videoPlayer.pause();
+          }
+          event.preventDefault(); // Prevent default space bar behavior
+          break;
         default:
           break;
       }

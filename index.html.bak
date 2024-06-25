@@ -399,6 +399,7 @@
     }
 
     function handleMouseClick(event) {
+      event.preventDefault(); // Prevent default mouse click behavior
       const videoPlayer = document.getElementById('videoPlayer');
       const rect = videoPlayer.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
