@@ -182,6 +182,7 @@
     document.getElementById('speedUpButton').addEventListener('click', speedUp);
     document.getElementById('speedDownButton').addEventListener('click', speedDown);
     document.getElementById('saveScreenshotButton').addEventListener('click', saveScreenshot);
+    document.addEventListener('keydown', handleKeydown);
 
     let currentFile;
     let currentDirectoryHandle;
@@ -383,6 +384,7 @@
       videoPlayer.src = URL.createObjectURL(file);
       document.getElementById('videoPopup').style.display = 'flex';
       videoPlayer.play();
+      videoPlayer.addEventListener('click', handleMouseClick);
       videoPlayer.addEventListener('touchstart', handleTouch, { passive: true }); // Handle touch events
     }
 
@@ -392,7 +394,30 @@
       const videoPlayer = document.getElementById('videoPlayer');
       videoPlayer.pause();
       videoPlayer.src = '';
+      videoPlayer.removeEventListener('click', handleMouseClick);
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
+    }
+
+    function handleMouseClick(event) {
+      event.preventDefault(); // Prevent default mouse click behavior
+      const videoPlayer = document.getElementById('videoPlayer');
+      const rect = videoPlayer.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+
+      if (clickX > rect.width / 3 && clickX < (rect.width / 3) * 2) {
+        // Click in the middle third - toggle play/pause
+        if (videoPlayer.paused) {
+          videoPlayer.play();
+        } else {
+          videoPlayer.pause();
+        }
+      } else if (clickX < rect.width / 3) {
+        // Click on the left third - rewind
+        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
+      } else {
+        // Click on the right third - fast forward
+        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
+      }
     }
 
     function handleTouch(event) {
@@ -491,6 +516,26 @@
         a.click();
         document.body.removeChild(a);
       }, 'image/png');
+    }
+
+    function handleKeydown(event) {
+      const videoPlayer = document.getElementById('videoPlayer');
+      switch (event.key) {
+        case 'ArrowLeft':
+          videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
+          break;
+        case 'ArrowRight':
+          videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
+          break;
+        case 'ArrowUp':
+          speedUp();
+          break;
+        case 'ArrowDown':
+          speedDown();
+          break;
+        default:
+          break;
+      }
     }
   </script>
 </body>
