@@ -81,7 +81,7 @@
       width: 100%;
       height: auto;
     }
-    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn {
+    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn {
       background: #f00;
       color: #fff;
       border: none;
@@ -112,7 +112,20 @@
     }
     .speed-btn {
       bottom: -1px;
-      left: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffa500; /* orange color */
+      font-size: 12px; /* Adjust font size for smaller text */
+    }
+    .speed-up-btn {
+      bottom: -1px;
+      left: calc(50% + 30px); /* Position to the right of speed-btn */
+      background: #ffa500; /* orange color */
+      font-size: 12px; /* Adjust font size for smaller text */
+    }
+    .speed-down-btn {
+      bottom: -1px;
+      left: calc(50% - 60px); /* Position further to the left of speed-btn */
       background: #ffa500; /* orange color */
       font-size: 12px; /* Adjust font size for smaller text */
     }
@@ -145,7 +158,9 @@
       <button class="close-btn" id="closePopupButton">&times;</button>
       <button class="capture-btn" id="captureButton">+</button>
       <button class="fullscreen-btn" id="fullscreenButton">⛶</button>
+      <button class="speed-down-btn" id="speedDownButton">&lt;&lt;</button>
       <button class="speed-btn" id="speedButton">1x</button>
+      <button class="speed-up-btn" id="speedUpButton">&gt;&gt;</button>
       <video controls id="videoPlayer"></video>
     </div>
   </div>
@@ -157,6 +172,8 @@
     document.getElementById('captureButton').addEventListener('click', captureThumbnail);
     document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
     document.getElementById('speedButton').addEventListener('click', changeSpeed);
+    document.getElementById('speedUpButton').addEventListener('click', speedUp);
+    document.getElementById('speedDownButton').addEventListener('click', speedDown);
 
     let currentFile;
     let currentDirectoryHandle;
@@ -164,8 +181,8 @@
     let videoFiles = [];
     let videoFileNames = new Set();
 
-    const speeds = [0.2, 0.5, 1, 2, 3, 4];
-    let currentSpeedIndex = 2;
+    const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
+    let currentSpeedIndex = 3;
 
     function toggleInfo() {
       showInfo = !showInfo;
@@ -358,8 +375,7 @@
       videoPlayer.src = URL.createObjectURL(file);
       document.getElementById('videoPopup').style.display = 'flex';
       videoPlayer.play();
-      videoPlayer.addEventListener('click', handleClick);
-      videoPlayer.addEventListener('touchstart', handleClick, { passive: true }); // Handle touch events
+      videoPlayer.addEventListener('touchstart', handleTouch, { passive: true }); // Handle touch events
     }
 
     function closePopup() {
@@ -368,27 +384,26 @@
       const videoPlayer = document.getElementById('videoPlayer');
       videoPlayer.pause();
       videoPlayer.src = '';
-      videoPlayer.removeEventListener('click', handleClick);
-      videoPlayer.removeEventListener('touchstart', handleClick); // Remove touch event listener
+      videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
     }
 
-    function handleClick(event) {
+    function handleTouch(event) {
       const videoPlayer = document.getElementById('videoPlayer');
       const rect = videoPlayer.getBoundingClientRect();
-      const clickX = (event.touches ? event.touches[0].clientX : event.clientX) - rect.left;
+      const touchX = event.touches[0].clientX - rect.left;
 
-      if (clickX > rect.width / 3 && clickX < (rect.width / 3) * 2) {
-        // Click in the middle third - toggle play/pause
+      if (touchX > rect.width / 3 && touchX < (rect.width / 3) * 2) {
+        // Touch in the middle third - toggle play/pause
         if (videoPlayer.paused) {
           videoPlayer.play();
         } else {
           videoPlayer.pause();
         }
-      } else if (clickX < rect.width / 3) {
-        // Click on the left third - rewind
+      } else if (touchX < rect.width / 3) {
+        // Touch on the left third - rewind
         videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
       } else {
-        // Click on the right third - fast forward
+        // Touch on the right third - fast forward
         videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
       }
     }
@@ -427,6 +442,24 @@
       currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
       videoPlayer.playbackRate = speeds[currentSpeedIndex];
       document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
+    }
+
+    function speedUp() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      if (currentSpeedIndex < speeds.length - 1) {
+        currentSpeedIndex++;
+        videoPlayer.playbackRate = speeds[currentSpeedIndex];
+        document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
+      }
+    }
+
+    function speedDown() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      if (currentSpeedIndex > 0) {
+        currentSpeedIndex--;
+        videoPlayer.playbackRate = speeds[currentSpeedIndex];
+        document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
+      }
     }
   </script>
 </body>
