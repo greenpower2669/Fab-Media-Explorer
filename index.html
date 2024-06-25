@@ -81,7 +81,7 @@
       width: 100%;
       height: auto;
     }
-    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn {
+    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn, .save-screenshot-btn {
       background: #f00;
       color: #fff;
       border: none;
@@ -129,6 +129,12 @@
       background: #ffa500; /* orange color */
       font-size: 12px; /* Adjust font size for smaller text */
     }
+    .save-screenshot-btn {
+      bottom: -1px;
+      left: -1px;
+      background: #0ff; /* cyan color */
+      font-size: 12px; /* Adjust font size for smaller text */
+    }
     .view-toggle {
       cursor: pointer;
       font-size: 24px;
@@ -161,6 +167,7 @@
       <button class="speed-down-btn" id="speedDownButton">&lt;&lt;</button>
       <button class="speed-btn" id="speedButton">1x</button>
       <button class="speed-up-btn" id="speedUpButton">&gt;&gt;</button>
+      <button class="save-screenshot-btn" id="saveScreenshotButton">💾</button>
       <video controls id="videoPlayer"></video>
     </div>
   </div>
@@ -174,6 +181,7 @@
     document.getElementById('speedButton').addEventListener('click', changeSpeed);
     document.getElementById('speedUpButton').addEventListener('click', speedUp);
     document.getElementById('speedDownButton').addEventListener('click', speedDown);
+    document.getElementById('saveScreenshotButton').addEventListener('click', saveScreenshot);
 
     let currentFile;
     let currentDirectoryHandle;
@@ -460,6 +468,29 @@
         videoPlayer.playbackRate = speeds[currentSpeedIndex];
         document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
       }
+    }
+
+    function saveScreenshot() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Set canvas dimensions to video dimensions
+      canvas.width = videoPlayer.videoWidth;
+      canvas.height = videoPlayer.videoHeight;
+
+      // Draw the current frame of the video onto the canvas
+      ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+
+      // Convert the canvas to a blob and then to a downloadable link
+      canvas.toBlob(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'screenshot.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, 'image/png');
     }
   </script>
 </body>

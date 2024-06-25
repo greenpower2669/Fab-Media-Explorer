@@ -125,7 +125,7 @@
     }
     .speed-down-btn {
       bottom: -1px;
-      left: calc(50% - 30px); /* Position to the left of speed-btn */
+      left: calc(50% - 60px); /* Position further to the left of speed-btn */
       background: #ffa500; /* orange color */
       font-size: 12px; /* Adjust font size for smaller text */
     }
@@ -181,8 +181,8 @@
     let videoFiles = [];
     let videoFileNames = new Set();
 
-    const speeds = [0.2, 0.5, 1, 2, 3, 4];
-    let currentSpeedIndex = 2;
+    const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
+    let currentSpeedIndex = 3;
 
     function toggleInfo() {
       showInfo = !showInfo;
