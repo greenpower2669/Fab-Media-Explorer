@@ -54,6 +54,10 @@
       z-index: 1;
       animation: rainbow 5s linear infinite;
     }
+    .file-item:hover .file-info {
+      display: block;
+      transition: display 0.5s;
+    }
     .show-info .file-info {
       display: block;
     }
@@ -76,10 +80,15 @@
       max-width: 90%;
       max-height: 90%;
       overflow: hidden; /* Prevent scrolling */
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .popup-content video {
-      width: 100%;
-      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Ensures video fits within container */
+      object-position: center; /* Center the video */
     }
     .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn, .save-screenshot-btn {
       background: #f00;
@@ -208,16 +217,14 @@
         currentDirectoryHandle = await window.showDirectoryPicker();
         videoFiles = [];
         videoFileNames.clear();
-        displayFiles(currentDirectoryHandle);
+        await collectFiles(currentDirectoryHandle);
+        displayFiles();
       } catch (err) {
         console.error('Error opening directory:', err);
       }
     }
 
-    async function displayFiles(directoryHandle) {
-      const fileContainer = document.getElementById('fileContainer');
-      fileContainer.innerHTML = '';
-
+    async function collectFiles(directoryHandle) {
       for await (const entry of directoryHandle.values()) {
         if (entry.kind === 'file') {
           const file = await entry.getFile();
@@ -238,25 +245,43 @@
           }
         }
       }
+    }
 
-      for (const file of videoFiles) {
+    function displayFiles() {
+      const fileContainer = document.getElementById('fileContainer');
+      fileContainer.innerHTML = '';
+
+      videoFiles.forEach(file => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
 
-        try {
-          const thumbnail = await getVideoThumbnailWithRetries(file, directoryHandle);
+        getVideoThumbnail(file).then(thumbnail => {
           if (thumbnail) {
             fileItem.appendChild(thumbnail);
+          } else {
+            const errorText = document.createElement('div');
+            errorText.textContent = 'Thumbnail not available';
+            fileItem.appendChild(errorText);
           }
-        } catch (err) {
+        }).catch(err => {
           console.error(`Failed to load video thumbnail for ${file.name}:`, err);
           const errorText = document.createElement('div');
           errorText.textContent = 'Thumbnail not available';
           fileItem.appendChild(errorText);
-        }
+        });
+
         fileItem.addEventListener('click', () => {
           playVideo(file);
           currentFile = file;
+          disableInfo(); // Disable info when playing video
+        });
+
+        fileItem.addEventListener('mouseover', () => {
+          showFileInfo(fileItem);
+        });
+
+        fileItem.addEventListener('mouseleave', () => {
+          hideFileInfo(fileItem);
         });
 
         const fileSize = (file.size / (1024 * 1024)).toFixed(2);
@@ -266,26 +291,23 @@
 
         fileItem.appendChild(fileInfo);
         fileContainer.appendChild(fileItem);
-      }
+      });
     }
 
-    async function getVideoThumbnailWithRetries(file, directoryHandle, maxRetries = 3) {
-      let attempt = 0;
-      while (attempt < maxRetries) {
-        try {
-          return await getVideoThumbnail(file, directoryHandle);
-        } catch (error) {
-          console.warn(`Attempt ${attempt + 1} to load thumbnail failed. Retrying...`, error);
-          attempt++;
-        }
-      }
-      throw new Error('Failed to load video thumbnail after multiple attempts');
+    function showFileInfo(fileItem) {
+      const fileInfo = fileItem.querySelector('.file-info');
+      fileInfo.style.display = 'block';
     }
 
-    async function getVideoThumbnail(file, directoryHandle) {
+    function hideFileInfo(fileItem) {
+      const fileInfo = fileItem.querySelector('.file-info');
+      fileInfo.style.display = 'none';
+    }
+
+    async function getVideoThumbnail(file) {
       const cacheFileName = file.name.replace(/\.[^/.]+$/, ".png");
       try {
-        const cacheHandle = await directoryHandle.getFileHandle(cacheFileName, { create: false });
+        const cacheHandle = await currentDirectoryHandle.getFileHandle(cacheFileName, { create: false });
         const cacheFile = await cacheHandle.getFile();
         const img = document.createElement('img');
         img.src = URL.createObjectURL(cacheFile);
@@ -293,7 +315,7 @@
       } catch (error) {
         console.warn(`No cache found for ${file.name}, generating new thumbnail.`);
         const thumbnail = await createVideoThumbnail(file);
-        await saveThumbnail(thumbnail, cacheFileName, directoryHandle);
+        await saveThumbnail(thumbnail, cacheFileName, currentDirectoryHandle);
         return thumbnail;
       }
     }
@@ -351,7 +373,7 @@
         await writable.close();
 
         // Refresh the thumbnail display after saving
-        displayFiles(currentDirectoryHandle);
+        displayFiles();
       };
     }
 
@@ -384,8 +406,22 @@
       videoPlayer.src = URL.createObjectURL(file);
       document.getElementById('videoPopup').style.display = 'flex';
       videoPlayer.play();
+
+      // Adjust video size based on container size
+      videoPlayer.addEventListener('loadedmetadata', () => {
+        adjustVideoSize(videoPlayer);
+      });
+
       videoPlayer.addEventListener('click', handleMouseClick);
       videoPlayer.addEventListener('touchstart', handleTouch, { passive: true }); // Handle touch events
+
+      disableInfo(); // Disable info when playing video
+    }
+
+    function disableInfo() {
+      showInfo = false;
+      const fileContainer = document.getElementById('fileContainer');
+      fileContainer.classList.remove('show-info');
     }
 
     function closePopup() {
@@ -396,6 +432,25 @@
       videoPlayer.src = '';
       videoPlayer.removeEventListener('click', handleMouseClick);
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
+    }
+
+    function adjustVideoSize(videoPlayer) {
+      const container = videoPlayer.parentElement;
+      const containerAspectRatio = container.clientWidth / container.clientHeight;
+      const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+
+      if (videoAspectRatio > containerAspectRatio) {
+        videoPlayer.style.width = '100%';
+        videoPlayer.style.height = 'auto';
+      } else {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+      }
+
+      if (videoPlayer.videoHeight > container.clientHeight) {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+      }
     }
 
     function handleMouseClick(event) {
@@ -448,7 +503,7 @@
           videoPopup.requestFullscreen();
         } else if (videoPopup.mozRequestFullScreen) { // Firefox
           videoPopup.mozRequestFullScreen();
-        } else if (videoPopup.webkitRequestFullscreen) { // Chrome, Safari and Opera
+        } else if (videoPopup.webkitRequestFullscreen) { // Chrome, Safari et Opera
           videoPopup.webkitRequestFullscreen();
         } else if (videoPopup.msRequestFullscreen) { // IE/Edge
           videoPopup.msRequestFullscreen();
@@ -463,7 +518,7 @@
         document.exitFullscreen();
       } else if (document.mozCancelFullScreen) { // Firefox
         document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari et Opera
         document.webkitExitFullscreen();
       } else if (document.msExitFullscreen) { // IE/Edge
         document.msExitFullscreen();

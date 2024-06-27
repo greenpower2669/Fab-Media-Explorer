@@ -76,10 +76,15 @@
       max-width: 90%;
       max-height: 90%;
       overflow: hidden; /* Prevent scrolling */
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .popup-content video {
-      width: 100%;
-      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Ensures video fits within container */
+      object-position: center; /* Center the video */
     }
     .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn, .save-screenshot-btn {
       background: #f00;
@@ -244,7 +249,7 @@
         fileItem.className = 'file-item';
 
         try {
-          const thumbnail = await getVideoThumbnailWithRetries(file, directoryHandle);
+          const thumbnail = await getVideoThumbnail(file, directoryHandle);
           if (thumbnail) {
             fileItem.appendChild(thumbnail);
           }
@@ -267,19 +272,6 @@
         fileItem.appendChild(fileInfo);
         fileContainer.appendChild(fileItem);
       }
-    }
-
-    async function getVideoThumbnailWithRetries(file, directoryHandle, maxRetries = 3) {
-      let attempt = 0;
-      while (attempt < maxRetries) {
-        try {
-          return await getVideoThumbnail(file, directoryHandle);
-        } catch (error) {
-          console.warn(`Attempt ${attempt + 1} to load thumbnail failed. Retrying...`, error);
-          attempt++;
-        }
-      }
-      throw new Error('Failed to load video thumbnail after multiple attempts');
     }
 
     async function getVideoThumbnail(file, directoryHandle) {
@@ -384,6 +376,12 @@
       videoPlayer.src = URL.createObjectURL(file);
       document.getElementById('videoPopup').style.display = 'flex';
       videoPlayer.play();
+
+      // Adjust video size based on container size
+      videoPlayer.addEventListener('loadedmetadata', () => {
+        adjustVideoSize(videoPlayer);
+      });
+
       videoPlayer.addEventListener('click', handleMouseClick);
       videoPlayer.addEventListener('touchstart', handleTouch, { passive: true }); // Handle touch events
     }
@@ -396,6 +394,25 @@
       videoPlayer.src = '';
       videoPlayer.removeEventListener('click', handleMouseClick);
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
+    }
+
+    function adjustVideoSize(videoPlayer) {
+      const container = videoPlayer.parentElement;
+      const containerAspectRatio = container.clientWidth / container.clientHeight;
+      const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+
+      if (videoAspectRatio > containerAspectRatio) {
+        videoPlayer.style.width = '100%';
+        videoPlayer.style.height = 'auto';
+      } else {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+      }
+
+      if (videoPlayer.videoHeight > container.clientHeight) {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+      }
     }
 
     function handleMouseClick(event) {
@@ -532,6 +549,15 @@
           break;
         case 'ArrowDown':
           speedDown();
+          break;
+        case ' ':
+          // Toggle play/pause with space bar
+          if (videoPlayer.paused) {
+            videoPlayer.play();
+          } else {
+            videoPlayer.pause();
+          }
+          event.preventDefault(); // Prevent default space bar behavior
           break;
         default:
           break;
