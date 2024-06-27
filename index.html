@@ -148,6 +148,22 @@
       cursor: pointer;
       font-size: 24px;
     }
+    .tooltip {
+      display: none;
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      z-index: 2;
+      transform: translate(-50%, -50%);
+      top: 50%;
+      left: 50%;
+      white-space: nowrap;
+    }
+    .show-tooltip {
+      display: block;
+    }
     @keyframes rainbow {
       0% { border-color: red; }
       14% { border-color: orange; }
@@ -178,13 +194,51 @@
       <button class="speed-up-btn" id="speedUpButton">&gt;&gt;</button>
       <button class="save-screenshot-btn" id="saveScreenshotButton">💾</button>
       <video controls id="videoPlayer"></video>
+      <div id="videoTooltip" class="tooltip"></div>
+    </div>
+  </div>
+
+  <div class="popup" id="infoPopup">
+    <div class="popup-content">
+      <button class="close-btn" id="closeInfoPopupButton">&times;</button>
+      <div>
+        <h2>Notice d'utilisation</h2>
+        <p>Voici comment utiliser le Fab Media Explorer :</p>
+        <ul>
+          <li>Ouvrez un répertoire contenant des vidéos en cliquant sur "Open Directory".</li>
+          <li>Cliquez sur une vignette pour lire la vidéo correspondante.</li>
+          <li>Utilisez les boutons du lecteur vidéo pour capturer une image, passer en plein écran, ajuster la vitesse de lecture, ou sauvegarder une capture d'écran.</li>
+          <li>Les raccourcis clavier sont :
+            <ul>
+              <li>Flèche gauche : Reculer de 10 secondes</li>
+              <li>Flèche droite : Avancer de 10 secondes</li>
+              <li>Flèche haut : Augmenter la vitesse de lecture</li>
+              <li>Flèche bas : Diminuer la vitesse de lecture</li>
+              <li>Espace : Lecture/Pause</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <script>
     document.getElementById('openDirectoryButton').addEventListener('click', openDirectory);
     document.getElementById('closePopupButton').addEventListener('click', closePopup);
-    document.getElementById('viewToggle').addEventListener('click', toggleInfo);
+    document.getElementById('closeInfoPopupButton').addEventListener('click', closeInfoPopup);
+    document.getElementById('viewToggle').addEventListener('click', showInfoPopup);
+    document.getElementById('captureButton').addEventListener('mouseover', () => showTooltip('Capture une image', 'captureButton'));
+    document.getElementById('captureButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('fullscreenButton').addEventListener('mouseover', () => showTooltip('Passer en plein écran', 'fullscreenButton'));
+    document.getElementById('fullscreenButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedButton').addEventListener('mouseover', () => showTooltip('Changer la vitesse de lecture', 'speedButton'));
+    document.getElementById('speedButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedUpButton').addEventListener('mouseover', () => showTooltip('Augmenter la vitesse de lecture', 'speedUpButton'));
+    document.getElementById('speedUpButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedDownButton').addEventListener('mouseover', () => showTooltip('Diminuer la vitesse de lecture', 'speedDownButton'));
+    document.getElementById('speedDownButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('saveScreenshotButton').addEventListener('mouseover', () => showTooltip('Sauvegarder une capture d\'écran', 'saveScreenshotButton'));
+    document.getElementById('saveScreenshotButton').addEventListener('mouseout', hideTooltip);
     document.getElementById('captureButton').addEventListener('click', captureThumbnail);
     document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
     document.getElementById('speedButton').addEventListener('click', changeSpeed);
@@ -198,6 +252,7 @@
     let showInfo = false;
     let videoFiles = [];
     let videoFileNames = new Set();
+    let tooltipTimeout;
 
     const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
     let currentSpeedIndex = 3;
@@ -434,6 +489,14 @@
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
     }
 
+    function closeInfoPopup() {
+      document.getElementById('infoPopup').style.display = 'none';
+    }
+
+    function showInfoPopup() {
+      document.getElementById('infoPopup').style.display = 'flex';
+    }
+
     function adjustVideoSize(videoPlayer) {
       const container = videoPlayer.parentElement;
       const containerAspectRatio = container.clientWidth / container.clientHeight;
@@ -600,6 +663,27 @@
         default:
           break;
       }
+    }
+
+    function showTooltip(text, buttonId) {
+      const tooltip = document.getElementById('videoTooltip');
+      tooltip.textContent = text;
+      tooltip.classList.add('show-tooltip');
+
+      const button = document.getElementById(buttonId);
+      const rect = button.getBoundingClientRect();
+      tooltip.style.top = `${rect.top + window.scrollY + rect.height / 2}px`;
+      tooltip.style.left = `${rect.left + window.scrollX + rect.width / 2}px`;
+
+      tooltipTimeout = setTimeout(() => {
+        tooltip.classList.remove('show-tooltip');
+      }, 2000); // Hide tooltip after 2 seconds
+    }
+
+    function hideTooltip() {
+      clearTimeout(tooltipTimeout);
+      const tooltip = document.getElementById('videoTooltip');
+      tooltip.classList.remove('show-tooltip');
     }
   </script>
 </body>

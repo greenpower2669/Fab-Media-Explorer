@@ -54,6 +54,10 @@
       z-index: 1;
       animation: rainbow 5s linear infinite;
     }
+    .file-item:hover .file-info {
+      display: block;
+      transition: display 0.5s;
+    }
     .show-info .file-info {
       display: block;
     }
@@ -144,6 +148,22 @@
       cursor: pointer;
       font-size: 24px;
     }
+    .tooltip {
+      display: none;
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      z-index: 2;
+      transform: translate(-50%, -50%);
+      top: 50%;
+      left: 50%;
+      white-space: nowrap;
+    }
+    .show-tooltip {
+      display: block;
+    }
     @keyframes rainbow {
       0% { border-color: red; }
       14% { border-color: orange; }
@@ -174,13 +194,51 @@
       <button class="speed-up-btn" id="speedUpButton">&gt;&gt;</button>
       <button class="save-screenshot-btn" id="saveScreenshotButton">💾</button>
       <video controls id="videoPlayer"></video>
+      <span id="videoTooltip" class="tooltip"></span>
+    </div>
+  </div>
+
+  <div class="popup" id="infoPopup">
+    <div class="popup-content">
+      <button class="close-btn" id="closeInfoPopupButton">&times;</button>
+      <div>
+        <h2>Notice d'utilisation</h2>
+        <p>Voici comment utiliser le Fab Media Explorer :</p>
+        <ul>
+          <li>Ouvrez un répertoire contenant des vidéos en cliquant sur "Open Directory".</li>
+          <li>Cliquez sur une vignette pour lire la vidéo correspondante.</li>
+          <li>Utilisez les boutons du lecteur vidéo pour capturer une image, passer en plein écran, ajuster la vitesse de lecture, ou sauvegarder une capture d'écran.</li>
+          <li>Les raccourcis clavier sont :
+            <ul>
+              <li>Flèche gauche : Reculer de 10 secondes</li>
+              <li>Flèche droite : Avancer de 10 secondes</li>
+              <li>Flèche haut : Augmenter la vitesse de lecture</li>
+              <li>Flèche bas : Diminuer la vitesse de lecture</li>
+              <li>Espace : Lecture/Pause</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <script>
     document.getElementById('openDirectoryButton').addEventListener('click', openDirectory);
     document.getElementById('closePopupButton').addEventListener('click', closePopup);
-    document.getElementById('viewToggle').addEventListener('click', toggleInfo);
+    document.getElementById('closeInfoPopupButton').addEventListener('click', closeInfoPopup);
+    document.getElementById('viewToggle').addEventListener('click', showInfoPopup);
+    document.getElementById('captureButton').addEventListener('mouseover', () => showTooltip('Capture une image'));
+    document.getElementById('captureButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('fullscreenButton').addEventListener('mouseover', () => showTooltip('Passer en plein écran'));
+    document.getElementById('fullscreenButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedButton').addEventListener('mouseover', () => showTooltip('Changer la vitesse de lecture'));
+    document.getElementById('speedButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedUpButton').addEventListener('mouseover', () => showTooltip('Augmenter la vitesse de lecture'));
+    document.getElementById('speedUpButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('speedDownButton').addEventListener('mouseover', () => showTooltip('Diminuer la vitesse de lecture'));
+    document.getElementById('speedDownButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('saveScreenshotButton').addEventListener('mouseover', () => showTooltip('Sauvegarder une capture d\'écran'));
+    document.getElementById('saveScreenshotButton').addEventListener('mouseout', hideTooltip);
     document.getElementById('captureButton').addEventListener('click', captureThumbnail);
     document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
     document.getElementById('speedButton').addEventListener('click', changeSpeed);
@@ -194,6 +252,7 @@
     let showInfo = false;
     let videoFiles = [];
     let videoFileNames = new Set();
+    let tooltipTimeout;
 
     const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
     let currentSpeedIndex = 3;
@@ -213,16 +272,14 @@
         currentDirectoryHandle = await window.showDirectoryPicker();
         videoFiles = [];
         videoFileNames.clear();
-        displayFiles(currentDirectoryHandle);
+        await collectFiles(currentDirectoryHandle);
+        displayFiles();
       } catch (err) {
         console.error('Error opening directory:', err);
       }
     }
 
-    async function displayFiles(directoryHandle) {
-      const fileContainer = document.getElementById('fileContainer');
-      fileContainer.innerHTML = '';
-
+    async function collectFiles(directoryHandle) {
       for await (const entry of directoryHandle.values()) {
         if (entry.kind === 'file') {
           const file = await entry.getFile();
@@ -243,25 +300,43 @@
           }
         }
       }
+    }
 
-      for (const file of videoFiles) {
+    function displayFiles() {
+      const fileContainer = document.getElementById('fileContainer');
+      fileContainer.innerHTML = '';
+
+      videoFiles.forEach(file => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
 
-        try {
-          const thumbnail = await getVideoThumbnail(file, directoryHandle);
+        getVideoThumbnail(file).then(thumbnail => {
           if (thumbnail) {
             fileItem.appendChild(thumbnail);
+          } else {
+            const errorText = document.createElement('div');
+            errorText.textContent = 'Thumbnail not available';
+            fileItem.appendChild(errorText);
           }
-        } catch (err) {
+        }).catch(err => {
           console.error(`Failed to load video thumbnail for ${file.name}:`, err);
           const errorText = document.createElement('div');
           errorText.textContent = 'Thumbnail not available';
           fileItem.appendChild(errorText);
-        }
+        });
+
         fileItem.addEventListener('click', () => {
           playVideo(file);
           currentFile = file;
+          disableInfo(); // Disable info when playing video
+        });
+
+        fileItem.addEventListener('mouseover', () => {
+          showFileInfo(fileItem);
+        });
+
+        fileItem.addEventListener('mouseleave', () => {
+          hideFileInfo(fileItem);
         });
 
         const fileSize = (file.size / (1024 * 1024)).toFixed(2);
@@ -271,13 +346,23 @@
 
         fileItem.appendChild(fileInfo);
         fileContainer.appendChild(fileItem);
-      }
+      });
     }
 
-    async function getVideoThumbnail(file, directoryHandle) {
+    function showFileInfo(fileItem) {
+      const fileInfo = fileItem.querySelector('.file-info');
+      fileInfo.style.display = 'block';
+    }
+
+    function hideFileInfo(fileItem) {
+      const fileInfo = fileItem.querySelector('.file-info');
+      fileInfo.style.display = 'none';
+    }
+
+    async function getVideoThumbnail(file) {
       const cacheFileName = file.name.replace(/\.[^/.]+$/, ".png");
       try {
-        const cacheHandle = await directoryHandle.getFileHandle(cacheFileName, { create: false });
+        const cacheHandle = await currentDirectoryHandle.getFileHandle(cacheFileName, { create: false });
         const cacheFile = await cacheHandle.getFile();
         const img = document.createElement('img');
         img.src = URL.createObjectURL(cacheFile);
@@ -285,7 +370,7 @@
       } catch (error) {
         console.warn(`No cache found for ${file.name}, generating new thumbnail.`);
         const thumbnail = await createVideoThumbnail(file);
-        await saveThumbnail(thumbnail, cacheFileName, directoryHandle);
+        await saveThumbnail(thumbnail, cacheFileName, currentDirectoryHandle);
         return thumbnail;
       }
     }
@@ -343,7 +428,7 @@
         await writable.close();
 
         // Refresh the thumbnail display after saving
-        displayFiles(currentDirectoryHandle);
+        displayFiles();
       };
     }
 
@@ -384,6 +469,14 @@
 
       videoPlayer.addEventListener('click', handleMouseClick);
       videoPlayer.addEventListener('touchstart', handleTouch, { passive: true }); // Handle touch events
+
+      disableInfo(); // Disable info when playing video
+    }
+
+    function disableInfo() {
+      showInfo = false;
+      const fileContainer = document.getElementById('fileContainer');
+      fileContainer.classList.remove('show-info');
     }
 
     function closePopup() {
@@ -394,6 +487,14 @@
       videoPlayer.src = '';
       videoPlayer.removeEventListener('click', handleMouseClick);
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
+    }
+
+    function closeInfoPopup() {
+      document.getElementById('infoPopup').style.display = 'none';
+    }
+
+    function showInfoPopup() {
+      document.getElementById('infoPopup').style.display = 'flex';
     }
 
     function adjustVideoSize(videoPlayer) {
@@ -465,7 +566,7 @@
           videoPopup.requestFullscreen();
         } else if (videoPopup.mozRequestFullScreen) { // Firefox
           videoPopup.mozRequestFullScreen();
-        } else if (videoPopup.webkitRequestFullscreen) { // Chrome, Safari and Opera
+        } else if (videoPopup.webkitRequestFullscreen) { // Chrome, Safari et Opera
           videoPopup.webkitRequestFullscreen();
         } else if (videoPopup.msRequestFullscreen) { // IE/Edge
           videoPopup.msRequestFullscreen();
@@ -480,7 +581,7 @@
         document.exitFullscreen();
       } else if (document.mozCancelFullScreen) { // Firefox
         document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari et Opera
         document.webkitExitFullscreen();
       } else if (document.msExitFullscreen) { // IE/Edge
         document.msExitFullscreen();
@@ -562,6 +663,22 @@
         default:
           break;
       }
+    }
+
+    function showTooltip(text) {
+      const tooltip = document.getElementById('videoTooltip');
+      tooltip.textContent = text;
+      tooltip.classList.add('show-tooltip');
+
+      tooltipTimeout = setTimeout(() => {
+        tooltip.classList.remove('show-tooltip');
+      }, 2000); // Hide tooltip after 2 seconds
+    }
+
+    function hideTooltip() {
+      clearTimeout(tooltipTimeout);
+      const tooltip = document.getElementById('videoTooltip');
+      tooltip.classList.remove('show-tooltip');
     }
   </script>
 </body>
