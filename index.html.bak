@@ -79,70 +79,104 @@
       border-radius: 5px;
       max-width: 90%;
       max-height: 90%;
-      overflow: hidden; /* Prevent scrolling */
+      overflow: visible; /* Allow elements to overflow */
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    .popup-content video {
+    .video-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: visible; /* Allow elements to overflow */
+    }
+    .video-container video {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain; /* Ensures video fits within container */
       object-position: center; /* Center the video */
+      transform-origin: center; /* Ensure zoom happens from the center */
     }
-    .close-btn, .capture-btn, .fullscreen-btn, .speed-btn, .speed-up-btn, .speed-down-btn, .save-screenshot-btn {
+    .control-btn {
       background: #f00;
       color: #fff;
       border: none;
       border-radius: 50%;
-      width: 24px; /* 20% larger than original 20px */
-      height: 24px; /* 20% larger than original 20px */
       cursor: pointer;
-      font-size: 20px; /* Adjust font size to match larger buttons */
+      font-size: 16px; /* Adjust font size to match smaller buttons */
       display: flex;
       justify-content: center;
       align-items: center;
       position: absolute;
+      z-index: 2;
+      opacity: 0.5;
+      transition: opacity 0.3s;
+    }
+    .control-btn:hover {
+      opacity: 1;
     }
     .close-btn {
-      top: -1px;
+      top: -1px; 
       right: -1px;
       background: #f00;
+      width: 24px;
+      height: 24px;
+      z-index: 3;
     }
     .capture-btn {
       top: -1px;
       left: -1px;
       background: #0f0;
+      width: 24px;
+      height: 24px;
     }
     .fullscreen-btn {
       bottom: -1px;
       right: -1px;
       background: #00f;
+      width: 24px;
+      height: 24px;
+    }
+    .speed-btn, .speed-up-btn, .speed-down-btn, .rewind-btn, .forward-btn {
+      bottom: -1px;
+      background: #ffa500; /* orange color */
+      font-size: 12px; /* Adjust font size for smaller text */
+      width: 50px; /* Adjust width for wider buttons */
+      height: 20px; /* Adjust height for shorter buttons */
+      border-radius: 10px; /* Adjust border-radius to maintain rounded corners */
     }
     .speed-btn {
-      bottom: -1px;
       left: 50%;
       transform: translateX(-50%);
-      background: #ffa500; /* orange color */
-      font-size: 12px; /* Adjust font size for smaller text */
     }
     .speed-up-btn {
-      bottom: -1px;
-      left: calc(50% + 30px); /* Position to the right of speed-btn */
-      background: #ffa500; /* orange color */
-      font-size: 12px; /* Adjust font size for smaller text */
+      left: calc(50% + 60px); /* Position to the right of speed-btn */
     }
     .speed-down-btn {
-      bottom: -1px;
-      left: calc(50% - 60px); /* Position further to the left of speed-btn */
+      left: calc(50% - 120px); /* Position further to the left of speed-btn */
+    }
+    .rewind-btn {
+      top: 0px;
+      left: 50%;
+      transform: translateX(-150%);
       background: #ffa500; /* orange color */
-      font-size: 12px; /* Adjust font size for smaller text */
+      width: 50px;
+      height: 20px;
+    }
+    .forward-btn {
+      top: 0px;
+      left: 50%;
+      transform: translateX(50%);
+      background: #ffa500; /* orange color */
+      width: 50px;
+      height: 20px;
     }
     .save-screenshot-btn {
       bottom: -1px;
       left: -1px;
       background: #0ff; /* cyan color */
-      font-size: 12px; /* Adjust font size for smaller text */
+      width: 24px; /* Make it square */
+      height: 24px; /* Make it square */
     }
     .view-toggle {
       cursor: pointer;
@@ -163,6 +197,60 @@
     }
     .show-tooltip {
       display: block;
+    }
+    .zoom-controls {
+      position: absolute;
+      top: 100px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+      cursor: move;
+      z-index: 3;
+      width: 100px;
+      height: auto;
+      opacity: 0.5;
+      transition: opacity 0.3s;
+      display: none; /* Start hidden */
+    }
+    .zoom-controls:hover {
+      opacity: 1;
+    }
+    .zoom-btn {
+      margin: 5px 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .zoom-btn:hover {
+      background: #ccc;
+    }
+    .zoom-title {
+      color: #fff;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .zoom-toggle {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      padding: 10px;
+      cursor: move;
+      z-index: 4;
+      width: 40px;
+      height: 40px;
+      opacity: 0.5;
+      transition: opacity 0.3s;
+    }
+    .zoom-toggle:hover {
+      opacity: 1;
     }
     @keyframes rainbow {
       0% { border-color: red; }
@@ -186,35 +274,71 @@
 
   <div class="popup" id="videoPopup">
     <div class="popup-content">
-      <button class="close-btn" id="closePopupButton">&times;</button>
-      <button class="capture-btn" id="captureButton">+</button>
-      <button class="fullscreen-btn" id="fullscreenButton">⛶</button>
-      <button class="speed-down-btn" id="speedDownButton">&lt;&lt;</button>
-      <button class="speed-btn" id="speedButton">1x</button>
-      <button class="speed-up-btn" id="speedUpButton">&gt;&gt;</button>
-      <button class="save-screenshot-btn" id="saveScreenshotButton">💾</button>
-      <video controls id="videoPlayer"></video>
-      <span id="videoTooltip" class="tooltip"></span>
+      <button class="control-btn close-btn" id="closePopupButton">&times;</button>
+      <div class="video-container" id="videoContainer">
+        <video controls id="videoPlayer" style="transform: scale(1);"></video>
+      </div>
+      <button class="control-btn capture-btn" id="captureButton">+</button>
+      <button class="control-btn fullscreen-btn" id="fullscreenButton">⛶</button>
+      <button class="control-btn speed-down-btn" id="speedDownButton">Slower</button>
+      <button class="control-btn speed-btn" id="speedButton">1x</button>
+      <button class="control-btn speed-up-btn" id="speedUpButton">Faster</button>
+      <button class="control-btn save-screenshot-btn" id="saveScreenshotButton">💾</button>
+      <button class="control-btn rewind-btn" id="rewindButton">&lt;&lt;</button>
+      <button class="control-btn forward-btn" id="forwardButton">&gt;&gt;</button>
+      <div id="videoTooltip" class="tooltip"></div>
+      <div class="zoom-controls" id="zoomControls">
+        <div class="zoom-title" id="zoomTitle">Zoom Ctrl</div>
+        <button class="zoom-btn" id="zoomInButton">+</button>
+        <button class="zoom-btn" id="zoomOutButton">-</button>
+        <button class="zoom-btn" id="captureButtonZoom">Capture</button>
+        <button class="zoom-btn" id="fullscreenButtonZoom">Fullscreen</button>
+        <button class="zoom-btn" id="speedDownButtonZoom">Slower</button>
+        <button class="zoom-btn" id="speedButtonZoom">Speed</button>
+        <button class="zoom-btn" id="speedUpButtonZoom">Faster</button>
+        <button class="zoom-btn" id="saveScreenshotButtonZoom">Save</button>
+        <button class="zoom-btn" id="rewindButtonZoom">Rewind</button>
+        <button class="zoom-btn" id="forwardButtonZoom">Forward</button>
+      </div>
+      <div class="zoom-toggle" id="zoomToggle">🔍</div>
     </div>
   </div>
 
   <div class="popup" id="infoPopup">
     <div class="popup-content">
-      <button class="close-btn" id="closeInfoPopupButton">&times;</button>
+      <button class="control-btn close-btn" id="closeInfoPopupButton">&times;</button>
       <div>
         <h2>Notice d'utilisation</h2>
         <p>Voici comment utiliser le Fab Media Explorer :</p>
         <ul>
           <li>Ouvrez un répertoire contenant des vidéos en cliquant sur "Open Directory".</li>
           <li>Cliquez sur une vignette pour lire la vidéo correspondante.</li>
-          <li>Utilisez les boutons du lecteur vidéo pour capturer une image, passer en plein écran, ajuster la vitesse de lecture, ou sauvegarder une capture d'écran.</li>
-          <li>Les raccourcis clavier sont :
+          <li>Utilisez les boutons du lecteur vidéo pour :
+            <ul>
+              <li>Capturer une image : bouton +</li>
+              <li>Passer en plein écran : bouton ⛶</li>
+              <li>Changer la vitesse de lecture : boutons Slower et Faster</li>
+              <li>Reculer de 10 secondes : bouton <<</li>
+              <li>Avancer de 10 secondes : bouton >></li>
+              <li>Sauvegarder une capture d'écran : bouton 💾</li>
+            </ul>
+          </li>
+          <li>Utilisez la barre de contrôle de zoom pour :
+            <ul>
+              <li>Zoomer : bouton +</li>
+              <li>Dézoomer : bouton -</li>
+            </ul>
+          </li>
+          <li>Raccourcis clavier :
             <ul>
               <li>Flèche gauche : Reculer de 10 secondes</li>
               <li>Flèche droite : Avancer de 10 secondes</li>
               <li>Flèche haut : Augmenter la vitesse de lecture</li>
               <li>Flèche bas : Diminuer la vitesse de lecture</li>
               <li>Espace : Lecture/Pause</li>
+              <li>Shift droite : Zoom avant</li>
+              <li>Shift gauche : Zoom arrière</li>
+              <li>Ctrl + Flèches : Déplacer la vidéo</li>
             </ul>
           </li>
         </ul>
@@ -227,24 +351,43 @@
     document.getElementById('closePopupButton').addEventListener('click', closePopup);
     document.getElementById('closeInfoPopupButton').addEventListener('click', closeInfoPopup);
     document.getElementById('viewToggle').addEventListener('click', showInfoPopup);
-    document.getElementById('captureButton').addEventListener('mouseover', () => showTooltip('Capture une image'));
-    document.getElementById('captureButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('fullscreenButton').addEventListener('mouseover', () => showTooltip('Passer en plein écran'));
-    document.getElementById('fullscreenButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('speedButton').addEventListener('mouseover', () => showTooltip('Changer la vitesse de lecture'));
-    document.getElementById('speedButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('speedUpButton').addEventListener('mouseover', () => showTooltip('Augmenter la vitesse de lecture'));
-    document.getElementById('speedUpButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('speedDownButton').addEventListener('mouseover', () => showTooltip('Diminuer la vitesse de lecture'));
-    document.getElementById('speedDownButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('saveScreenshotButton').addEventListener('mouseover', () => showTooltip('Sauvegarder une capture d\'écran'));
-    document.getElementById('saveScreenshotButton').addEventListener('mouseout', hideTooltip);
-    document.getElementById('captureButton').addEventListener('click', captureThumbnail);
-    document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
-    document.getElementById('speedButton').addEventListener('click', changeSpeed);
-    document.getElementById('speedUpButton').addEventListener('click', speedUp);
-    document.getElementById('speedDownButton').addEventListener('click', speedDown);
-    document.getElementById('saveScreenshotButton').addEventListener('click', saveScreenshot);
+
+    const buttons = [
+      { id: 'captureButton', action: captureThumbnail, tooltip: 'Capture une image' },
+      { id: 'fullscreenButton', action: toggleFullscreen, tooltip: 'Passer en plein écran' },
+      { id: 'speedButton', action: changeSpeed, tooltip: 'Changer la vitesse de lecture' },
+      { id: 'speedUpButton', action: speedUp, tooltip: 'Augmenter la vitesse de lecture' },
+      { id: 'speedDownButton', action: speedDown, tooltip: 'Diminuer la vitesse de lecture' },
+      { id: 'saveScreenshotButton', action: saveScreenshot, tooltip: 'Sauvegarder une capture d\'écran' },
+      { id: 'rewindButton', action: rewind, tooltip: 'Reculer de 10 secondes' },
+      { id: 'forwardButton', action: forward, tooltip: 'Avancer de 10 secondes' },
+      { id: 'captureButtonZoom', action: captureThumbnail, tooltip: 'Capture une image' },
+      { id: 'fullscreenButtonZoom', action: toggleFullscreen, tooltip: 'Passer en plein écran' },
+      { id: 'speedButtonZoom', action: changeSpeed, tooltip: 'Changer la vitesse de lecture' },
+      { id: 'speedUpButtonZoom', action: speedUp, tooltip: 'Augmenter la vitesse de lecture' },
+      { id: 'speedDownButtonZoom', action: speedDown, tooltip: 'Diminuer la vitesse de lecture' },
+      { id: 'saveScreenshotButtonZoom', action: saveScreenshot, tooltip: 'Sauvegarder une capture d\'écran' },
+      { id: 'rewindButtonZoom', action: rewind, tooltip: 'Reculer de 10 secondes' },
+      { id: 'forwardButtonZoom', action: forward, tooltip: 'Avancer de 10 secondes' }
+    ];
+
+    buttons.forEach(btn => {
+      const buttonElement = document.getElementById(btn.id);
+      buttonElement.addEventListener('click', btn.action);
+      buttonElement.addEventListener('mouseover', () => showTooltip(btn.tooltip, btn.id));
+      buttonElement.addEventListener('mouseout', hideTooltip);
+    });
+
+    document.getElementById('zoomInButton').addEventListener('click', zoomIn);
+    document.getElementById('zoomInButton').addEventListener('mouseover', () => showTooltip('Zoomer', 'zoomInButton'));
+    document.getElementById('zoomInButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('zoomOutButton').addEventListener('click', zoomOut);
+    document.getElementById('zoomOutButton').addEventListener('mouseover', () => showTooltip('Dézoomer', 'zoomOutButton'));
+    document.getElementById('zoomOutButton').addEventListener('mouseout', hideTooltip);
+    document.getElementById('zoomToggle').addEventListener('click', toggleZoomControls);
+    document.getElementById('zoomToggle').addEventListener('mouseover', () => showTooltip('Afficher/masquer les contrôles de zoom', 'zoomToggle'));
+    document.getElementById('zoomToggle').addEventListener('mouseout', hideTooltip);
+
     document.addEventListener('keydown', handleKeydown);
 
     let currentFile;
@@ -256,6 +399,9 @@
 
     const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
     let currentSpeedIndex = 3;
+    let currentScale = 1;
+    let isDragging = false;
+    let dragStartX, dragStartY, initialX, initialY;
 
     function toggleInfo() {
       showInfo = !showInfo;
@@ -531,10 +677,10 @@
         }
       } else if (clickX < rect.width / 3) {
         // Click on the left third - rewind
-        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
+        rewind();
       } else {
         // Click on the right third - fast forward
-        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
+        forward();
       }
     }
 
@@ -552,10 +698,10 @@
         }
       } else if (touchX < rect.width / 3) {
         // Touch on the left third - rewind
-        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
+        rewind();
       } else {
         // Touch on the right third - fast forward
-        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
+        forward();
       }
     }
 
@@ -613,6 +759,20 @@
       }
     }
 
+    function rewind() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      const rewindTime = 10 * speeds[currentSpeedIndex];
+      videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - rewindTime);  // Rewind by a multiple of speed
+      showTooltip(`Rewind ${Math.round(rewindTime)} seconds`, 'rewindButton');
+    }
+
+    function forward() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      const forwardTime = 10 * speeds[currentSpeedIndex];
+      videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + forwardTime);  // Fast forward by a multiple of speed
+      showTooltip(`Forward ${Math.round(forwardTime)} seconds`, 'forwardButton');
+    }
+
     function saveScreenshot() {
       const videoPlayer = document.getElementById('videoPlayer');
       const canvas = document.createElement('canvas');
@@ -638,18 +798,35 @@
 
     function handleKeydown(event) {
       const videoPlayer = document.getElementById('videoPlayer');
+      const videoContainer = document.getElementById('videoContainer');
       switch (event.key) {
         case 'ArrowLeft':
-          videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);  // Rewind by 10 seconds
+          if (event.ctrlKey) {
+            videoContainer.style.left = `${videoContainer.offsetLeft - 10}px`;
+          } else {
+            rewind();
+          }
           break;
         case 'ArrowRight':
-          videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);  // Fast forward by 10 seconds
+          if (event.ctrlKey) {
+            videoContainer.style.left = `${videoContainer.offsetLeft + 10}px`;
+          } else {
+            forward();
+          }
           break;
         case 'ArrowUp':
-          speedUp();
+          if (event.ctrlKey) {
+            videoContainer.style.top = `${videoContainer.offsetTop - 10}px`;
+          } else {
+            speedUp();
+          }
           break;
         case 'ArrowDown':
-          speedDown();
+          if (event.ctrlKey) {
+            videoContainer.style.top = `${videoContainer.offsetTop + 10}px`;
+          } else {
+            speedDown();
+          }
           break;
         case ' ':
           // Toggle play/pause with space bar
@@ -660,15 +837,28 @@
           }
           event.preventDefault(); // Prevent default space bar behavior
           break;
+        case 'Shift':
+          // Zoom in with right shift, zoom out with left shift
+          if (event.location === KeyboardEvent.DOM_KEY_LOCATION_RIGHT) {
+            zoomIn();
+          } else if (event.location === KeyboardEvent.DOM_KEY_LOCATION_LEFT) {
+            zoomOut();
+          }
+          break;
         default:
           break;
       }
     }
 
-    function showTooltip(text) {
+    function showTooltip(text, buttonId) {
       const tooltip = document.getElementById('videoTooltip');
       tooltip.textContent = text;
       tooltip.classList.add('show-tooltip');
+
+      const button = document.getElementById(buttonId);
+      const rect = button.getBoundingClientRect();
+      tooltip.style.top = '50%';
+      tooltip.style.left = '50%';
 
       tooltipTimeout = setTimeout(() => {
         tooltip.classList.remove('show-tooltip');
@@ -679,6 +869,62 @@
       clearTimeout(tooltipTimeout);
       const tooltip = document.getElementById('videoTooltip');
       tooltip.classList.remove('show-tooltip');
+    }
+
+    function zoomIn() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      currentScale += 0.1;
+      videoPlayer.style.transform = `scale(${currentScale})`;
+    }
+
+    function zoomOut() {
+      const videoPlayer = document.getElementById('videoPlayer');
+      currentScale -= 0.1;
+      videoPlayer.style.transform = `scale(${currentScale})`;
+    }
+
+    function toggleZoomControls() {
+      const zoomControls = document.getElementById('zoomControls');
+      zoomControls.style.display = zoomControls.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function dragMouseDown(e) {
+      const element = e.target;
+      isDragging = true;
+      dragStartX = e.clientX - element.offsetLeft;
+      dragStartY = e.clientY - element.offsetTop;
+      document.addEventListener('mousemove', dragMouseMove);
+      document.addEventListener('mouseup', dragMouseUp);
+    }
+
+    function dragMouseMove(e) {
+      if (isDragging) {
+        const element = document.querySelector('.dragging');
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
+        element.style.left = `${deltaX}px`;
+        element.style.top = `${deltaY}px`;
+      }
+    }
+
+    function dragMouseUp() {
+      isDragging = false;
+      document.removeEventListener('mousemove', dragMouseMove);
+      document.removeEventListener('mouseup', dragMouseUp);
+    }
+
+    enableDragging(document.getElementById('zoomControls'));
+    enableDragging(document.getElementById('zoomToggle'));
+    enableDragging(document.getElementById('videoContainer'));
+
+    function enableDragging(element) {
+      element.addEventListener('mousedown', function(e) {
+        element.classList.add('dragging');
+        dragMouseDown(e);
+        element.addEventListener('mouseup', function() {
+          element.classList.remove('dragging');
+        }, { once: true });
+      });
     }
   </script>
 </body>
