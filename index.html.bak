@@ -171,6 +171,36 @@
       width: 50px;
       height: 20px;
     }
+    .prev-btn, .next-btn {
+      background: #800080; /* purple color */
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      z-index: 2;
+      opacity: 0.2; /* Increased transparency */
+      transition: opacity 0.2s;
+      width: 20px; /* Reduced size */
+      height: 40px; /* Reduced size */
+    }
+    .prev-btn:hover, .next-btn:hover {
+      opacity: 0.6; /* Increased opacity on hover */
+    }
+    .prev-btn {
+      top: 50%;
+      left: 0px; /* Moved closer to the video */
+      transform: translateY(-50%);
+    }
+    .next-btn {
+      top: 50%;
+      right: 0px; /* Moved closer to the video */
+      transform: translateY(-50%);
+    }
     .save-screenshot-btn {
       bottom: -1px;
       left: -1px;
@@ -252,6 +282,29 @@
     .zoom-toggle:hover {
       opacity: 1;
     }
+    .hide-btn {
+      position: absolute;
+      bottom: -5px; /* Adjust as needed */
+      left: 80%;
+      transform: translateX(-50%);
+      background: #800080; /* purple color */
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+      width: 30px;
+      height: 30px;
+      opacity: 0.2;
+      transition: opacity 0.1s;
+    }
+    .hide-btn:hover {
+      opacity: 1;
+    }
     @keyframes rainbow {
       0% { border-color: red; }
       14% { border-color: orange; }
@@ -286,6 +339,8 @@
       <button class="control-btn save-screenshot-btn" id="saveScreenshotButton">💾</button>
       <button class="control-btn rewind-btn" id="rewindButton">&lt;&lt;</button>
       <button class="control-btn forward-btn" id="forwardButton">&gt;&gt;</button>
+      <button class="control-btn prev-btn" id="prevButton">⟸</button>
+      <button class="control-btn next-btn" id="nextButton">⟹</button>
       <div id="videoTooltip" class="tooltip"></div>
       <div class="zoom-controls" id="zoomControls">
         <div class="zoom-title" id="zoomTitle">Zoom Ctrl</div>
@@ -299,8 +354,11 @@
         <button class="zoom-btn" id="saveScreenshotButtonZoom">Save</button>
         <button class="zoom-btn" id="rewindButtonZoom">Rewind</button>
         <button class="zoom-btn" id="forwardButtonZoom">Forward</button>
+        <button class="zoom-btn" id="prevButtonZoom">Prev</button>
+        <button class="zoom-btn" id="nextButtonZoom">Next</button>
       </div>
       <div class="zoom-toggle" id="zoomToggle">🔍</div>
+      <button class="hide-btn" id="hideButton">👁️</button>
     </div>
   </div>
 
@@ -320,6 +378,8 @@
               <li>Changer la vitesse de lecture : boutons Slower et Faster</li>
               <li>Reculer de 10 secondes : bouton <<</li>
               <li>Avancer de 10 secondes : bouton >></li>
+              <li>Vidéo précédente : bouton ⟸</li>
+              <li>Vidéo suivante : bouton ⟹</li>
               <li>Sauvegarder une capture d'écran : bouton 💾</li>
             </ul>
           </li>
@@ -351,6 +411,7 @@
     document.getElementById('closePopupButton').addEventListener('click', closePopup);
     document.getElementById('closeInfoPopupButton').addEventListener('click', closeInfoPopup);
     document.getElementById('viewToggle').addEventListener('click', showInfoPopup);
+    document.getElementById('hideButton').addEventListener('click', toggleHideElements);
 
     const buttons = [
       { id: 'captureButton', action: captureThumbnail, tooltip: 'Capture une image' },
@@ -361,6 +422,8 @@
       { id: 'saveScreenshotButton', action: saveScreenshot, tooltip: 'Sauvegarder une capture d\'écran' },
       { id: 'rewindButton', action: rewind, tooltip: 'Reculer de 10 secondes' },
       { id: 'forwardButton', action: forward, tooltip: 'Avancer de 10 secondes' },
+      { id: 'prevButton', action: playPreviousVideo, tooltip: 'Vidéo précédente' },
+      { id: 'nextButton', action: playNextVideo, tooltip: 'Vidéo suivante' },
       { id: 'captureButtonZoom', action: captureThumbnail, tooltip: 'Capture une image' },
       { id: 'fullscreenButtonZoom', action: toggleFullscreen, tooltip: 'Passer en plein écran' },
       { id: 'speedButtonZoom', action: changeSpeed, tooltip: 'Changer la vitesse de lecture' },
@@ -368,7 +431,9 @@
       { id: 'speedDownButtonZoom', action: speedDown, tooltip: 'Diminuer la vitesse de lecture' },
       { id: 'saveScreenshotButtonZoom', action: saveScreenshot, tooltip: 'Sauvegarder une capture d\'écran' },
       { id: 'rewindButtonZoom', action: rewind, tooltip: 'Reculer de 10 secondes' },
-      { id: 'forwardButtonZoom', action: forward, tooltip: 'Avancer de 10 secondes' }
+      { id: 'forwardButtonZoom', action: forward, tooltip: 'Avancer de 10 secondes' },
+      { id: 'prevButtonZoom', action: playPreviousVideo, tooltip: 'Vidéo précédente' },
+      { id: 'nextButtonZoom', action: playNextVideo, tooltip: 'Vidéo suivante' }
     ];
 
     buttons.forEach(btn => {
@@ -396,6 +461,7 @@
     let videoFiles = [];
     let videoFileNames = new Set();
     let tooltipTimeout;
+    let elementsHidden = false;
 
     const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
     let currentSpeedIndex = 3;
@@ -916,6 +982,7 @@
     enableDragging(document.getElementById('zoomControls'));
     enableDragging(document.getElementById('zoomToggle'));
     enableDragging(document.getElementById('videoContainer'));
+    enableDragging(document.getElementById('hideButton'));
 
     function enableDragging(element) {
       element.addEventListener('mousedown', function(e) {
@@ -925,6 +992,30 @@
           element.classList.remove('dragging');
         }, { once: true });
       });
+    }
+
+    function toggleHideElements() {
+      const elementsToToggle = document.querySelectorAll('.control-btn, .zoom-controls, .zoom-toggle, .view-toggle, .header, #fileContainer, #infoPopup');
+      elementsHidden = !elementsHidden;
+      elementsToToggle.forEach(element => {
+        element.style.display = elementsHidden ? 'none' : '';
+      });
+    }
+
+    function playPreviousVideo() {
+      const currentIndex = videoFiles.indexOf(currentFile);
+      if (currentIndex > 0) {
+        playVideo(videoFiles[currentIndex - 1]);
+        currentFile = videoFiles[currentIndex - 1]; // Update currentFile
+      }
+    }
+
+    function playNextVideo() {
+      const currentIndex = videoFiles.indexOf(currentFile);
+      if (currentIndex < videoFiles.length - 1) {
+        playVideo(videoFiles[currentIndex + 1]);
+        currentFile = videoFiles[currentIndex + 1]; // Update currentFile
+      }
     }
   </script>
 </body>
