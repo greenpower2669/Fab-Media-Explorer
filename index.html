@@ -282,6 +282,29 @@
     .zoom-toggle:hover {
       opacity: 1;
     }
+    .hide-btn {
+      position: absolute;
+      bottom: -5px; /* Adjust as needed */
+      left: 80%;
+      transform: translateX(-50%);
+      background: #800080; /* purple color */
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+      width: 30px;
+      height: 30px;
+      opacity: 0.2;
+      transition: opacity 0.1s;
+    }
+    .hide-btn:hover {
+      opacity: 1;
+    }
     @keyframes rainbow {
       0% { border-color: red; }
       14% { border-color: orange; }
@@ -335,6 +358,7 @@
         <button class="zoom-btn" id="nextButtonZoom">Next</button>
       </div>
       <div class="zoom-toggle" id="zoomToggle">🔍</div>
+      <button class="hide-btn" id="hideButton">👁️</button>
     </div>
   </div>
 
@@ -387,7 +411,9 @@
     document.getElementById('closePopupButton').addEventListener('click', closePopup);
     document.getElementById('closeInfoPopupButton').addEventListener('click', closeInfoPopup);
     document.getElementById('viewToggle').addEventListener('click', showInfoPopup);
+    document.getElementById('hideButton').addEventListener('click', toggleHideElements);
 
+    // Array of button definitions with actions and tooltips
     const buttons = [
       { id: 'captureButton', action: captureThumbnail, tooltip: 'Capture une image' },
       { id: 'fullscreenButton', action: toggleFullscreen, tooltip: 'Passer en plein écran' },
@@ -411,6 +437,7 @@
       { id: 'nextButtonZoom', action: playNextVideo, tooltip: 'Vidéo suivante' }
     ];
 
+    // Add event listeners to each button for actions and tooltips
     buttons.forEach(btn => {
       const buttonElement = document.getElementById(btn.id);
       buttonElement.addEventListener('click', btn.action);
@@ -436,6 +463,7 @@
     let videoFiles = [];
     let videoFileNames = new Set();
     let tooltipTimeout;
+    let elementsHidden = false;
 
     const speeds = [0.1, 0.2, 0.5, 1, 2, 3, 4, 8, 16, 32];
     let currentSpeedIndex = 3;
@@ -443,6 +471,7 @@
     let isDragging = false;
     let dragStartX, dragStartY, initialX, initialY;
 
+    // Toggle display of file information
     function toggleInfo() {
       showInfo = !showInfo;
       const fileContainer = document.getElementById('fileContainer');
@@ -453,6 +482,7 @@
       }
     }
 
+    // Open a directory and display its video files
     async function openDirectory() {
       try {
         currentDirectoryHandle = await window.showDirectoryPicker();
@@ -465,6 +495,7 @@
       }
     }
 
+    // Collect video files from the directory
     async function collectFiles(directoryHandle) {
       for await (const entry of directoryHandle.values()) {
         if (entry.kind === 'file') {
@@ -488,6 +519,7 @@
       }
     }
 
+    // Display video files as thumbnails
     function displayFiles() {
       const fileContainer = document.getElementById('fileContainer');
       fileContainer.innerHTML = '';
@@ -535,16 +567,19 @@
       });
     }
 
+    // Show file information tooltip
     function showFileInfo(fileItem) {
       const fileInfo = fileItem.querySelector('.file-info');
       fileInfo.style.display = 'block';
     }
 
+    // Hide file information tooltip
     function hideFileInfo(fileItem) {
       const fileInfo = fileItem.querySelector('.file-info');
       fileInfo.style.display = 'none';
     }
 
+    // Get or create a video thumbnail
     async function getVideoThumbnail(file) {
       const cacheFileName = file.name.replace(/\.[^/.]+$/, ".png");
       try {
@@ -561,6 +596,7 @@
       }
     }
 
+    // Create a video thumbnail
     async function createVideoThumbnail(file) {
       return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -596,6 +632,7 @@
       });
     }
 
+    // Save the generated thumbnail
     async function saveThumbnail(imgElement, fileName, directoryHandle) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -618,6 +655,7 @@
       };
     }
 
+    // Capture a thumbnail from the video
     async function captureThumbnail() {
       if (!currentFile || !currentDirectoryHandle) {
         return;
@@ -642,6 +680,7 @@
       await saveThumbnail(img, cacheFileName, currentDirectoryHandle);
     }
 
+    // Play the selected video
     function playVideo(file) {
       const videoPlayer = document.getElementById('videoPlayer');
       videoPlayer.src = URL.createObjectURL(file);
@@ -659,12 +698,14 @@
       disableInfo(); // Disable info when playing video
     }
 
+    // Disable file information display
     function disableInfo() {
       showInfo = false;
       const fileContainer = document.getElementById('fileContainer');
       fileContainer.classList.remove('show-info');
     }
 
+    // Close the video popup
     function closePopup() {
       exitFullscreen();
       document.getElementById('videoPopup').style.display = 'none';
@@ -675,14 +716,17 @@
       videoPlayer.removeEventListener('touchstart', handleTouch); // Remove touch event listener
     }
 
+    // Close the information popup
     function closeInfoPopup() {
       document.getElementById('infoPopup').style.display = 'none';
     }
 
+    // Show the information popup
     function showInfoPopup() {
       document.getElementById('infoPopup').style.display = 'flex';
     }
 
+    // Adjust the video size to fit within the container
     function adjustVideoSize(videoPlayer) {
       const container = videoPlayer.parentElement;
       const containerAspectRatio = container.clientWidth / container.clientHeight;
@@ -702,6 +746,7 @@
       }
     }
 
+    // Handle mouse click on the video player
     function handleMouseClick(event) {
       event.preventDefault(); // Prevent default mouse click behavior
       const videoPlayer = document.getElementById('videoPlayer');
@@ -724,6 +769,7 @@
       }
     }
 
+    // Handle touch events on the video player
     function handleTouch(event) {
       const videoPlayer = document.getElementById('videoPlayer');
       const rect = videoPlayer.getBoundingClientRect();
@@ -745,6 +791,7 @@
       }
     }
 
+    // Toggle fullscreen mode
     function toggleFullscreen() {
       const videoPopup = document.getElementById('videoPopup');
       if (!document.fullscreenElement) {
@@ -762,6 +809,7 @@
       }
     }
 
+    // Exit fullscreen mode
     function exitFullscreen() {
       if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -774,6 +822,7 @@
       }
     }
 
+    // Change playback speed
     function changeSpeed() {
       const videoPlayer = document.getElementById('videoPlayer');
       currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
@@ -781,6 +830,7 @@
       document.getElementById('speedButton').textContent = speeds[currentSpeedIndex] + 'x';
     }
 
+    // Increase playback speed
     function speedUp() {
       const videoPlayer = document.getElementById('videoPlayer');
       if (currentSpeedIndex < speeds.length - 1) {
@@ -790,6 +840,7 @@
       }
     }
 
+    // Decrease playback speed
     function speedDown() {
       const videoPlayer = document.getElementById('videoPlayer');
       if (currentSpeedIndex > 0) {
@@ -799,6 +850,7 @@
       }
     }
 
+    // Rewind the video
     function rewind() {
       const videoPlayer = document.getElementById('videoPlayer');
       const rewindTime = 10 * speeds[currentSpeedIndex];
@@ -806,6 +858,7 @@
       showTooltip(`Rewind ${Math.round(rewindTime)} seconds`, 'rewindButton');
     }
 
+    // Fast forward the video
     function forward() {
       const videoPlayer = document.getElementById('videoPlayer');
       const forwardTime = 10 * speeds[currentSpeedIndex];
@@ -813,6 +866,7 @@
       showTooltip(`Forward ${Math.round(forwardTime)} seconds`, 'forwardButton');
     }
 
+    // Save a screenshot from the video
     function saveScreenshot() {
       const videoPlayer = document.getElementById('videoPlayer');
       const canvas = document.createElement('canvas');
@@ -836,6 +890,7 @@
       }, 'image/png');
     }
 
+    // Handle keyboard shortcuts
     function handleKeydown(event) {
       const videoPlayer = document.getElementById('videoPlayer');
       const videoContainer = document.getElementById('videoContainer');
@@ -890,6 +945,7 @@
       }
     }
 
+    // Show a tooltip with the specified text
     function showTooltip(text, buttonId) {
       const tooltip = document.getElementById('videoTooltip');
       tooltip.textContent = text;
@@ -905,29 +961,34 @@
       }, 2000); // Hide tooltip after 2 seconds
     }
 
+    // Hide the tooltip
     function hideTooltip() {
       clearTimeout(tooltipTimeout);
       const tooltip = document.getElementById('videoTooltip');
       tooltip.classList.remove('show-tooltip');
     }
 
+    // Zoom in the video
     function zoomIn() {
       const videoPlayer = document.getElementById('videoPlayer');
       currentScale += 0.1;
       videoPlayer.style.transform = `scale(${currentScale})`;
     }
 
+    // Zoom out the video
     function zoomOut() {
       const videoPlayer = document.getElementById('videoPlayer');
       currentScale -= 0.1;
       videoPlayer.style.transform = `scale(${currentScale})`;
     }
 
+    // Toggle the display of zoom controls
     function toggleZoomControls() {
       const zoomControls = document.getElementById('zoomControls');
       zoomControls.style.display = zoomControls.style.display === 'none' ? 'block' : 'none';
     }
 
+    // Handle mouse down event for dragging
     function dragMouseDown(e) {
       const element = e.target;
       isDragging = true;
@@ -937,6 +998,7 @@
       document.addEventListener('mouseup', dragMouseUp);
     }
 
+    // Handle mouse move event for dragging
     function dragMouseMove(e) {
       if (isDragging) {
         const element = document.querySelector('.dragging');
@@ -947,16 +1009,14 @@
       }
     }
 
+    // Handle mouse up event for dragging
     function dragMouseUp() {
       isDragging = false;
       document.removeEventListener('mousemove', dragMouseMove);
       document.removeEventListener('mouseup', dragMouseUp);
     }
 
-    enableDragging(document.getElementById('zoomControls'));
-    enableDragging(document.getElementById('zoomToggle'));
-    enableDragging(document.getElementById('videoContainer'));
-
+    // Enable dragging for an element
     function enableDragging(element) {
       element.addEventListener('mousedown', function(e) {
         element.classList.add('dragging');
@@ -967,6 +1027,22 @@
       });
     }
 
+    // Initialize dragging functionality
+    enableDragging(document.getElementById('zoomControls'));
+    enableDragging(document.getElementById('zoomToggle'));
+    enableDragging(document.getElementById('videoContainer'));
+    enableDragging(document.getElementById('hideButton'));
+
+    // Toggle the display of elements
+    function toggleHideElements() {
+      const elementsToToggle = document.querySelectorAll('.control-btn, .zoom-controls, .zoom-toggle, .view-toggle, .header, #fileContainer, #infoPopup');
+      elementsHidden = !elementsHidden;
+      elementsToToggle.forEach(element => {
+        element.style.display = elementsHidden ? 'none' : '';
+      });
+    }
+
+    // Play the previous video in the list
     function playPreviousVideo() {
       const currentIndex = videoFiles.indexOf(currentFile);
       if (currentIndex > 0) {
@@ -975,6 +1051,7 @@
       }
     }
 
+    // Play the next video in the list
     function playNextVideo() {
       const currentIndex = videoFiles.indexOf(currentFile);
       if (currentIndex < videoFiles.length - 1) {
